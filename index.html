@@ -313,6 +313,28 @@ tbody tr:hover { background: var(--green-50); }
 .chart-label { font-size: 13px; color: var(--gray-600); margin-top: 4px; }
 .chart-sub { font-size: 12px; color: var(--gray-600); }
 
+/* ===== Gate Overlay ===== */
+.gate-overlay {
+  position: relative;
+}
+.gate-overlay::after {
+  content: ""; position: absolute; inset: 0;
+  background: rgba(255,255,255,0.6); backdrop-filter: blur(4px);
+  border-radius: var(--radius-lg); z-index: 10; pointer-events: none;
+}
+.gate-banner {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  z-index: 11; text-align: center; pointer-events: auto;
+}
+.gate-btn {
+  padding: 10px 28px; background: var(--orange-500); color: white;
+  border: none; border-radius: 6px; font-size: 15px; font-weight: 600;
+  cursor: pointer; box-shadow: 0 4px 12px rgba(244,140,6,0.4);
+  transition: all 0.2s;
+}
+.gate-btn:hover { background: #e08504; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(244,140,6,0.5); }
+.gate-hint { font-size: 13px; color: var(--gray-600); margin-top: 8px; }
+
 /* ===== Toast ===== */
 .toast {
   position: fixed; top: 20px; right: 20px; z-index: 999;
@@ -434,6 +456,8 @@ tbody tr:hover { background: var(--green-50); }
   </nav>
   <div class="nav-mobile-overlay" id="navOverlay" onclick="closeMobileMenu()"></div>
   <div class="header-right">
+    <span id="memberBadge" style="display:none;font-size:12px;background:var(--green-100);color:var(--green-700);padding:3px 10px;border-radius:20px;font-weight:500">已入驻</span>
+    <button id="joinBtn" class="btn btn-orange btn-sm" onclick="openModal('register')" style="font-weight:600">立即入驻 ¥9.90</button>
     <span style="font-size:13px;color:var(--gray-600)">张记果品（档口代卖方）</span>
     <button class="btn btn-outline btn-sm" onclick="switchRole()">切换角色</button>
     <button class="btn btn-primary btn-sm" onclick="openModal('publish')">+ 发布代卖</button>
@@ -1042,6 +1066,72 @@ tbody tr:hover { background: var(--green-50); }
   </div>
 </div>
 
+<!-- 平台入驻弹窗 -->
+<div class="modal-overlay" id="modal-register">
+  <div class="modal" style="width:480px">
+    <div id="registerStep1">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:48px;margin-bottom:8px">🏛️</div>
+        <h3>入驻农批通平台</h3>
+        <p style="color:var(--gray-600);font-size:14px;margin-top:8px">缴纳入驻费后即可查看完整交易数据</p>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--green-50),var(--blue-100));padding:16px;border-radius:var(--radius);margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+          <span>🏷️ 平台入驻费</span>
+          <span style="font-size:28px;font-weight:700;color:var(--green-700)">¥9.90</span>
+        </div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:8px;line-height:1.8">
+          ✔ 查看全部代卖交易数据<br>
+          ✔ 查看行情报价详情<br>
+          ✔ 查看对账结算明细<br>
+          ✔ 使用支付管理功能<br>
+          ✔ 永久有效，无其他费用
+        </div>
+      </div>
+      <div class="form-group">
+        <label>支付方式</label>
+        <div class="payment-methods">
+          <div class="payment-method selected" onclick="selectRegMethod(this)" data-method="wechat">
+            <div class="pm-icon">💚</div><div class="pm-name">微信</div>
+          </div>
+          <div class="payment-method" onclick="selectRegMethod(this)" data-method="alipay">
+            <div class="pm-icon">💙</div><div class="pm-name">支付宝</div>
+          </div>
+          <div class="payment-method" onclick="selectRegMethod(this)" data-method="wallet">
+            <div class="pm-icon">👛</div><div class="pm-name">平台钱包</div>
+            <div class="pm-desc">余额 ¥<span id="regWalletBalance">0</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px">
+        <button class="btn btn-outline" onclick="closeModal('register')">暂不加入</button>
+        <button class="btn btn-primary" onclick="startRegister()">立即入驻 ¥9.90</button>
+      </div>
+    </div>
+    <div id="registerStep2" style="display:none">
+      <h3 style="text-align:center">扫码支付入驻费</h3>
+      <div class="qr-container">
+        <div class="qr-box"></div>
+        <div class="qr-tip">请使用<span id="regPayMethod2">微信</span>扫描二维码</div>
+        <div class="qr-amount">¥9.90</div>
+        <div class="qr-expire">请在 <span class="countdown" id="regCountdown">05:00</span> 内完成支付</div>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn btn-outline btn-sm" onclick="simulateRegisterSuccess()">（模拟支付成功）</button>
+      </div>
+    </div>
+    <div id="registerStep3" style="display:none">
+      <div class="pay-success">
+        <div class="icon">🎉</div>
+        <h3>入驻成功！</h3>
+        <p style="color:var(--gray-600);margin-top:8px">您现在已是农批通正式成员</p>
+        <p style="font-size:13px;color:var(--green-600);margin-top:4px">所有交易数据已解锁</p>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="closeRegister()">开始使用</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ==================== DATA ====================
 const origins = [
@@ -1160,6 +1250,10 @@ function renderOriginList() {
 }
 
 function renderFruitTable() {
+  if (!isPlatformMember) {
+    document.getElementById("fruitTable").innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看代卖中的货源</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></td></tr>';
+    return;
+  }
   document.getElementById("fruitTable").innerHTML = consignments.slice(0, 4).map(f => `
     <tr>
       <td><strong>${f.name}</strong></td>
@@ -1174,6 +1268,10 @@ function renderFruitTable() {
 }
 
 function renderPriceTable() {
+  if (!isPlatformMember) {
+    document.getElementById("priceTable").innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看档口代卖求购数据</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></td></tr>';
+    return;
+  }
   document.getElementById("priceTable").innerHTML = prices.map(p => {
     const cls = p.match >= 90 ? "match-high" : (p.match >= 80 ? "match-mid" : "");
     return `
@@ -1190,6 +1288,10 @@ function renderPriceTable() {
 }
 
 function renderRecentOrders() {
+  if (!isPlatformMember) {
+    document.getElementById("recentOrders").innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看最近代卖成交</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></div>';
+    return;
+  }
   const settled = consignments.filter(c => c.status === "已结算" || c.status === "已售罄");
   document.getElementById("recentOrders").innerHTML = settled.slice(0, 4).map(o => `
     <div class="settlement-card">
@@ -1206,6 +1308,10 @@ function renderRecentOrders() {
 }
 
 function renderConsignTable(filter = "") {
+  if (!isPlatformMember) {
+    document.getElementById("consignTable").innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看代卖交易数据</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></td></tr>';
+    return;
+  }
   const oFilter = document.getElementById("csOrigin")?.value || "";
   const sFilter = document.getElementById("csStatus")?.value || "";
   const aFilter = document.getElementById("csAgent")?.value || "";
@@ -1248,6 +1354,10 @@ function renderConsignTable(filter = "") {
 }
 
 function renderMarketPriceTable() {
+  if (!isPlatformMember) {
+    document.getElementById("marketPriceTable").innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看行情报价详情</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></td></tr>';
+    return;
+  }
   document.getElementById("marketPriceTable").innerHTML = prices.map(p => {
     const cls = p.match >= 90 ? "match-high" : (p.match >= 80 ? "match-mid" : "");
     return `
@@ -1278,6 +1388,10 @@ function renderSpecTable() {
 }
 
 function renderSettleTable() {
+  if (!isPlatformMember) {
+    document.getElementById("settleTable").innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看对账结算明细</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></td></tr>';
+    return;
+  }
   document.getElementById("settleTable").innerHTML = settlements.map(s => `
     <tr>
       <td style="color:var(--gray-600);font-size:13px">${s.id}</td>
@@ -1304,7 +1418,12 @@ function filterConsign() {
 }
 
 // ==================== MODAL ====================
-function openModal(type) { document.getElementById("modal-" + type).classList.add("open"); }
+function openModal(type) {
+  document.getElementById("modal-" + type).classList.add("open");
+  if (type === "register") {
+    updateWalletDisplay();
+  }
+}
 function closeModal(type) {
   document.getElementById("modal-" + type).classList.remove("open");
   if (type === "recharge") cancelPay();
@@ -1316,9 +1435,121 @@ document.querySelectorAll(".modal-overlay").forEach(ov => {
       this.classList.remove("open");
       if (this.id === "modal-recharge") cancelPay();
       if (this.id === "modal-pay") currentPayOrder = null;
+      if (this.id === "modal-register") cancelRegTimer();
     }
   });
 });
+
+// ==================== PLATFORM REGISTRATION ====================
+let regPayMethod = "wechat";
+let regTimer = null;
+
+function selectRegMethod(el) {
+  document.querySelectorAll("#modal-register .payment-method").forEach(m => m.classList.remove("selected"));
+  el.classList.add("selected");
+  regPayMethod = el.dataset.method;
+}
+
+function startRegister() {
+  if (!isPlatformMember && regPayMethod === "wallet") {
+    const fee = 990; // 9.90
+    if (walletBalance < fee) { showToast("钱包余额不足，请选择其他支付方式或先充值"); return; }
+    deductBalance(fee, "平台入驻费");
+    completeRegistration();
+    return;
+  }
+  // Show QR code step
+  document.getElementById("registerStep1").style.display = "none";
+  document.getElementById("registerStep2").style.display = "block";
+  document.getElementById("regPayMethod2").textContent = regPayMethod === "wechat" ? "微信" : "支付宝";
+  // Countdown
+  let sec = 300;
+  const cd = document.getElementById("regCountdown");
+  cd.textContent = "05:00";
+  regTimer = setInterval(() => {
+    sec--;
+    const m = Math.floor(sec / 60), s = sec % 60;
+    cd.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    if (sec <= 0) { clearInterval(regTimer); showToast("支付超时，请重试"); closeModal("register"); }
+  }, 1000);
+}
+
+function simulateRegisterSuccess() {
+  cancelRegTimer();
+  document.getElementById("registerStep2").style.display = "none";
+  document.getElementById("registerStep3").style.display = "block";
+  document.getElementById("modal-register").style.display = "none";
+  // Simulate payment
+  const fee = 990;
+  walletBalance -= fee;
+  transactions.unshift({
+    icon:"🏛️", cls:"out", type:"入驻费", desc:"平台入驻费 ¥9.90", amount:"-¥9.90", cls2:"out", time: new Date().toLocaleString("zh-CN")
+  });
+  completeRegistration();
+  // Re-render payment page if on it
+  if (document.getElementById("page-payment").classList.contains("active")) {
+    renderTransactions(); updateWalletDisplay();
+  }
+}
+
+function completeRegistration() {
+  isPlatformMember = true;
+  cancelRegTimer();
+  document.getElementById("registerStep1").style.display = "block";
+  document.getElementById("registerStep2").style.display = "none";
+  document.getElementById("registerStep3").style.display = "none";
+  closeModal("register");
+  // Update header
+  document.getElementById("memberBadge").style.display = "inline-block";
+  document.getElementById("joinBtn").style.display = "none";
+  showToast("入驻成功！已解锁全部交易数据");
+  // Remove all gate overlays
+  document.querySelectorAll(".gate-overlay").forEach(el => {
+    el.classList.remove("gate-overlay");
+    const banner = el.querySelector(".gate-banner");
+    if (banner) banner.remove();
+  });
+  // Re-render current page
+  refreshCurrentPage();
+  updateWalletDisplay();
+}
+
+function cancelRegTimer() { if (regTimer) { clearInterval(regTimer); regTimer = null; } }
+
+function closeRegister() {
+  cancelRegTimer();
+  closeModal("register");
+  refreshCurrentPage();
+}
+
+function checkMemberGate() {
+  if (isPlatformMember) return true;
+  // Show registration modal instead of gating individual elements
+  openModal("register");
+  return false;
+}
+
+function addGateOverlay(el) {
+  if (isPlatformMember) return;
+  if (!el.classList.contains("gate-overlay")) {
+    el.classList.add("gate-overlay");
+    const banner = document.createElement("div");
+    banner.className = "gate-banner";
+    banner.innerHTML = '<div style="font-size:14px;font-weight:600;color:var(--gray-900);margin-bottom:10px">🔒 入驻后查看完整数据</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button><div class="gate-hint">入驻后永久有效</div>';
+    el.appendChild(banner);
+  }
+}
+
+function refreshCurrentPage() {
+  const activePage = document.querySelector(".page.active");
+  if (!activePage) return;
+  const pageId = activePage.id.replace("page-", "");
+  if (pageId === "consign") renderConsignTable();
+  if (pageId === "market") renderMarketPriceTable();
+  if (pageId === "settle") renderSettleTable();
+  if (pageId === "payment") { renderTransactions(); renderPaymentOrders(); updateWalletDisplay(); }
+  if (pageId === "livedata") { fetchWeather(); renderMarketPrices(); renderNewsFeed(); renderLogistics(); }
+}
 
 // ==================== PAYMENT DATA ====================
 let walletBalance = 1256800;
@@ -1347,6 +1578,10 @@ const paymentOrders = [
 
 // ==================== PAYMENT RENDER ====================
 function renderTransactions() {
+  if (!isPlatformMember) {
+    document.getElementById("transactionList").innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看交易流水</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></div>';
+    return;
+  }
   document.getElementById("transactionList").innerHTML = transactions.map(t => `
     <div class="transaction-item">
       <div style="display:flex;align-items:center;gap:10px">
@@ -1362,6 +1597,10 @@ function renderTransactions() {
 }
 
 function renderPaymentOrders() {
+  if (!isPlatformMember) {
+    document.getElementById("paymentOrderTable").innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px"><div style="font-size:16px;color:var(--gray-700);margin-bottom:12px">🔒 入驻后查看支付订单</div><button class="gate-btn" onclick="openModal(\'register\')">立即入驻 ¥9.90</button></td></tr>';
+    return;
+  }
   const filter = document.getElementById("payFilter")?.value || "";
   let data = paymentOrders;
   if (filter) data = data.filter(o => o.status === filter);
@@ -1395,6 +1634,8 @@ function updateWalletDisplay() {
   document.getElementById("withdrawAvailable").textContent = avail.toLocaleString();
   const pwEl = document.getElementById("payWalletBalance");
   if (pwEl) pwEl.textContent = avail.toLocaleString();
+  const rwEl = document.getElementById("regWalletBalance");
+  if (rwEl) rwEl.textContent = avail.toLocaleString();
 }
 
 function startRecharge() {
@@ -1725,6 +1966,7 @@ function showToast(msg) {
 
 // ==================== ROLE SWITCH ====================
 let currentRole = "agent"; // agent | farmer
+let isPlatformMember = false; // 平台入驻状态
 function switchRole() {
   currentRole = currentRole === "agent" ? "farmer" : "agent";
   const label = document.querySelector(".header-right span");
@@ -1740,6 +1982,10 @@ function switchRole() {
 }
 
 // ==================== INIT ====================
+if (isPlatformMember) {
+  document.getElementById("memberBadge").style.display = "inline-block";
+  document.getElementById("joinBtn").style.display = "none";
+}
 renderOriginList();
 renderFruitTable();
 renderPriceTable();
